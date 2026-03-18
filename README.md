@@ -1,6 +1,6 @@
 # PHP API Playground
 
-Laravel 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabase PostgreSQL을 데이터베이스로 사용합니다.
+Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabase PostgreSQL을 데이터베이스로 사용하며, Posts CRUD API와 Swagger(Scramble) 문서를 포함합니다.
 
 ---
 
@@ -10,6 +10,7 @@ Laravel 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabase P
 - [초기 환경 설정](#초기-환경-설정)
 - [프로젝트 셋업](#프로젝트-셋업)
 - [프로젝트 구조](#프로젝트-구조)
+- [API 문서 (Swagger)](#api-문서-swagger)
 - [주요 명령어](#주요-명령어)
 - [트러블슈팅](#트러블슈팅)
 
@@ -138,7 +139,7 @@ php artisan key:generate
 php artisan migrate
 ```
 
-생성되는 테이블: `users`, `sessions`, `cache`, `jobs`, `password_reset_tokens` 등
+생성되는 테이블: `users`, `sessions`, `cache`, `jobs`, `posts`, `password_reset_tokens` 등
 
 ### 6. 개발 서버 실행
 
@@ -156,9 +157,12 @@ php artisan serve
 php-api-playground/
 ├── app/                    # 애플리케이션 핵심 코드
 │   ├── Http/
-│   │   └── Controllers/    # 컨트롤러
-│   ├── Models/             # Eloquent 모델
-│   └── Providers/          # 서비스 프로바이더
+│   │   ├── Controllers/
+│   │   │   └── Api/        # API 컨트롤러 (PostController)
+│   │   ├── Requests/       # Form Request (StorePostRequest, UpdatePostRequest)
+│   │   └── Resources/      # API Resource (PostResource)
+│   ├── Models/             # Eloquent 모델 (Post)
+│   └── Providers/         # 서비스 프로바이더
 ├── config/                 # 설정 파일
 ├── database/
 │   ├── migrations/         # DB 마이그레이션
@@ -172,6 +176,7 @@ php-api-playground/
 │   └── js/
 ├── routes/
 │   ├── web.php             # 웹 라우트
+│   ├── api.php             # API 라우트 (posts CRUD)
 │   └── console.php         # Artisan 명령
 ├── storage/                # 로그, 캐시, 세션
 ├── .env                    # 환경 변수 (git 제외)
@@ -180,6 +185,27 @@ php-api-playground/
 ├── composer.json           # PHP 의존성
 └── README.md
 ```
+
+---
+
+## API 문서 (Swagger)
+
+| URL | 설명 |
+|-----|------|
+| `http://127.0.0.1:8000/docs/api` | Swagger UI (API 문서) |
+| `http://127.0.0.1:8000/docs/api.json` | OpenAPI JSON 스펙 |
+
+Scramble을 사용해 라우트·FormRequest·Resource에서 자동으로 OpenAPI 문서를 생성합니다.
+
+### Posts CRUD API 엔드포인트
+
+| Method | URI | 설명 |
+|--------|-----|------|
+| GET | `/api/posts` | 게시글 목록 조회 |
+| POST | `/api/posts` | 게시글 생성 |
+| GET | `/api/posts/{id}` | 게시글 상세 조회 |
+| PUT/PATCH | `/api/posts/{id}` | 게시글 수정 |
+| DELETE | `/api/posts/{id}` | 게시글 삭제 |
 
 ---
 
