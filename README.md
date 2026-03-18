@@ -1,6 +1,6 @@
 # PHP API Playground
 
-Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabase PostgreSQL을 데이터베이스로 사용하며, Posts CRUD API와 Swagger(Scramble) 문서를 포함합니다.
+Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabase PostgreSQL을 데이터베이스로 사용하며, Posts CRUD API, 경매 물건(Auction Items) CRUD·AI 권리분석(Gemini) API, Swagger(Scramble) 문서를 포함합니다.
 
 ---
 
@@ -139,9 +139,28 @@ php artisan key:generate
 php artisan migrate
 ```
 
-생성되는 테이블: `users`, `sessions`, `cache`, `jobs`, `posts`, `password_reset_tokens` 등
+생성되는 테이블: `users`, `sessions`, `cache`, `jobs`, `posts`, `auction_items`, `auction_item_registries`, `auction_item_tenants`, `auction_item_distributions`, `password_reset_tokens` 등
 
-### 6. 개발 서버 실행
+### 6. 시드 데이터 (선택)
+
+경매 물건 20건 시드:
+
+```powershell
+php artisan db:seed --class=AuctionItemSeeder
+```
+
+### 7. Gemini API 키 (권리분석용, 선택)
+
+`.env`에 추가:
+
+```env
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-1.5-flash
+```
+
+[Google AI Studio](https://makersuite.google.com/)에서 API 키 발급
+
+### 8. 개발 서버 실행
 
 ```powershell
 php artisan serve
@@ -158,12 +177,15 @@ php-api-playground/
 ├── app/                    # 애플리케이션 핵심 코드
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   └── Api/        # API 컨트롤러 (PostController)
-│   │   ├── Requests/       # Form Request (StorePostRequest, UpdatePostRequest)
-│   │   └── Resources/      # API Resource (PostResource)
-│   ├── Models/             # Eloquent 모델 (Post)
+│   │   │   └── Api/        # API 컨트롤러 (PostController, AuctionItemController)
+│   │   ├── Requests/       # Form Request
+│   │   └── Resources/      # API Resource
+│   ├── Models/             # Eloquent 모델 (Post, AuctionItem 등)
+│   ├── Services/           # GeminiRightsAnalysisService (권리분석)
 │   └── Providers/         # 서비스 프로바이더
 ├── config/                 # 설정 파일
+│   ├── gemini.php          # Gemini API 설정
+│   └── prompts.php         # 권리분석 프롬프트 (유지보수용)
 ├── database/
 │   ├── migrations/         # DB 마이그레이션
 │   ├── factories/          # 모델 팩토리
@@ -176,7 +198,7 @@ php-api-playground/
 │   └── js/
 ├── routes/
 │   ├── web.php             # 웹 라우트
-│   ├── api.php             # API 라우트 (posts CRUD)
+│   ├── api.php             # API 라우트 (posts, auction-items, analyze)
 │   └── console.php         # Artisan 명령
 ├── storage/                # 로그, 캐시, 세션
 ├── .env                    # 환경 변수 (git 제외)
@@ -206,6 +228,17 @@ Scramble을 사용해 라우트·FormRequest·Resource에서 자동으로 OpenAP
 | GET | `/api/posts/{id}` | 게시글 상세 조회 |
 | PUT/PATCH | `/api/posts/{id}` | 게시글 수정 |
 | DELETE | `/api/posts/{id}` | 게시글 삭제 |
+
+### Auction Items API 엔드포인트
+
+| Method | URI | 설명 |
+|--------|-----|------|
+| GET | `/api/auction-items` | 경매 물건 목록 조회 |
+| POST | `/api/auction-items` | 경매 물건 생성 |
+| GET | `/api/auction-items/{id}` | 경매 물건 상세 조회 |
+| PUT/PATCH | `/api/auction-items/{id}` | 경매 물건 수정 |
+| DELETE | `/api/auction-items/{id}` | 경매 물건 삭제 |
+| POST | `/api/auction-items/{id}/analyze` | AI 권리분석 (Gemini) |
 
 ---
 
