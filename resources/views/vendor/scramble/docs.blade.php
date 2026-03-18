@@ -139,7 +139,13 @@
         }
     </style>
 </head>
-<body style="height: 100vh; overflow-y: hidden">
+<body style="height: 100vh; overflow-y: hidden; display: flex; flex-direction: column">
+@if($config->get('ui.git_url'))
+<div style="flex-shrink:0;padding:8px 16px;background:var(--color-canvas);border-bottom:1px solid var(--color-border);font-size:0.875rem;text-align:right">
+    <a href="{{ $config->get('ui.git_url') }}" target="_blank" rel="noopener" style="color:var(--color-accent)">View on Git ↗</a>
+</div>
+@endif
+<div style="flex:1;min-height:0">
 <elements-api
     id="docs"
     tryItCredentialsPolicy="{{ $config->get('ui.try_it_credentials_policy', 'include') }}"
@@ -153,8 +159,10 @@
     (async () => {
         const docs = document.getElementById('docs');
         docs.apiDescriptionDocument = @json($spec);
+
     })();
 </script>
+</div>
 
 @if($config->get('ui.theme', 'light') === 'system')
     <script>
