@@ -9,6 +9,7 @@ Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabas
 - [필수 요구사항](#필수-요구사항)
 - [초기 환경 설정](#초기-환경-설정)
 - [프로젝트 셋업](#프로젝트-셋업)
+- [Railway 배포](#railway-배포)
 - [프로젝트 구조](#프로젝트-구조)
 - [API 문서 (Swagger)](#api-문서-swagger)
 - [주요 명령어](#주요-명령어)
@@ -20,7 +21,7 @@ Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabas
 
 | 항목     | 버전      |
 | -------- | --------- |
-| PHP      | 8.3 이상  |
+| PHP      | 8.4 이상  |
 | Composer | 최신 버전 |
 
 > Node.js는 Laravel Blade 템플릿으로 화면을 구성할 때 필수는 아닙니다. Vite·npm 기반 프론트엔드 빌드가 필요할 때만 설치하면 됩니다.
@@ -158,15 +159,66 @@ GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-1.5-flash
 ```
 
-[Google AI Studio](https://makersuite.google.com/)에서 API 키 발급
+[Google AI Studio](https://aistudio.google.com/)에서 API 키 발급
 
-### 8. 개발 서버 실행
+### 8. 환경 변수 (배포 시)
+
+| 변수 | 설명 |
+|------|------|
+| `APP_URL` | 앱 URL. Railway 배포 시 `https://[프로젝트명].up.railway.app` 형식으로 설정 |
+| `APP_GIT_URL` | Scramble API 문서에 Git 링크 표시 (선택, 예: `https://github.com/username/php-api-playground`) |
+
+### 9. 개발 서버 실행
 
 ```powershell
 php artisan serve
 ```
 
 브라우저에서 `http://127.0.0.1:8000` 접속
+
+---
+
+## Railway 배포
+
+[Nixpacks](https://nixpacks.com/) 기반으로 Railway에 배포할 수 있습니다.
+
+### 1. Railway 프로젝트 생성
+
+1. [Railway](https://railway.app/) 로그인 후 **New Project** 생성
+2. **Deploy from GitHub repo** 선택 후 저장소 연결
+3. 자동으로 빌드·배포가 시작됨
+
+### 2. 환경 변수 설정
+
+Railway 대시보드 → **Variables**에서 다음 변수 설정:
+
+| 변수 | 설명 |
+|------|------|
+| `APP_KEY` | `php artisan key:generate --show`로 생성한 키 |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_URL` | `https://[프로젝트명].up.railway.app` (HTTPS 필수) |
+| `DB_*` | Supabase 연결 정보 (로컬과 동일) |
+| `GEMINI_API_KEY` | 권리분석 사용 시 |
+| `APP_GIT_URL` | API 문서 Git 링크 (선택) |
+
+### 3. 마이그레이션 실행
+
+배포 후 Railway CLI 또는 **One-off Command**로 실행:
+
+```powershell
+php artisan migrate --force
+```
+
+### 4. 시드 (선택)
+
+```powershell
+php artisan db:seed --class=AuctionItemSeeder --force
+```
+
+### 5. 배포 URL
+
+배포 완료 후 `https://[프로젝트명].up.railway.app` 형식의 URL로 접속합니다.
 
 ---
 
@@ -185,7 +237,8 @@ php-api-playground/
 │   └── Providers/         # 서비스 프로바이더
 ├── config/                 # 설정 파일
 │   ├── gemini.php          # Gemini API 설정
-│   └── prompts.php         # 권리분석 프롬프트 (유지보수용)
+│   ├── prompts.php         # 권리분석 프롬프트 (유지보수용)
+│   └── scramble.php        # Scramble API 문서 설정
 ├── database/
 │   ├── migrations/         # DB 마이그레이션
 │   ├── factories/          # 모델 팩토리
@@ -205,6 +258,9 @@ php-api-playground/
 ├── .env.example            # 환경 변수 예시
 ├── artisan                 # Artisan CLI
 ├── composer.json           # PHP 의존성
+├── package.json            # Node 의존성 (Vite, Tailwind)
+├── vite.config.js          # Vite 빌드 설정
+├── nixpacks.toml           # Railway/Nixpacks 빌드 설정
 └── README.md
 ```
 
@@ -214,8 +270,10 @@ php-api-playground/
 
 | URL | 설명 |
 |-----|------|
-| `http://127.0.0.1:8000/docs/api` | Swagger UI (API 문서) |
-| `http://127.0.0.1:8000/docs/api.json` | OpenAPI JSON 스펙 |
+| `http://127.0.0.1:8000/docs/api` | Swagger UI (로컬) |
+| `http://127.0.0.1:8000/docs/api.json` | OpenAPI JSON 스펙 (로컬) |
+| `https://[프로젝트명].up.railway.app/docs/api` | Swagger UI (Railway 배포) |
+| `https://[프로젝트명].up.railway.app/docs/api.json` | OpenAPI JSON 스펙 (Railway 배포) |
 
 Scramble을 사용해 라우트·FormRequest·Resource에서 자동으로 OpenAPI 문서를 생성합니다.
 
@@ -294,6 +352,14 @@ php artisan migrate
     ```
 
     > `php --ini`로 `php.ini` 경로 확인. 위 경로는 실제 PHP 설치 경로로 수정
+
+### Railway 배포 시 Mixed Content (CSS/JS 로드 실패)
+
+HTTPS 페이지에서 HTTP 에셋이 차단될 때 발생. Railway **Variables**에서 `APP_URL`을 `https://`로 설정했는지 확인. `URL::forceScheme('https')` 및 TrustProxies 설정이 적용되어 있어야 함.
+
+### Railway 배포 시 API 문서 403 Forbidden
+
+Scramble의 `RestrictedDocsAccess` 미들웨어가 프로덕션에서 접근을 차단. `config/scramble.php`에서 해당 미들웨어를 제거하면 공개 접근 가능.
 
 ---
 
