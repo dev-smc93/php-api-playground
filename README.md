@@ -12,6 +12,7 @@ Laravel 13 기반 PHP API 기본 구성 파악용 프로젝트입니다. Supabas
 - [Railway 배포](#railway-배포)
 - [프로젝트 구조](#프로젝트-구조)
 - [API 문서 (Swagger)](#api-문서-swagger)
+- [경매 테이블 설계](#경매-테이블-설계)
 - [주요 명령어](#주요-명령어)
 - [트러블슈팅](#트러블슈팅)
 
@@ -297,6 +298,82 @@ Scramble을 사용해 라우트·FormRequest·Resource에서 자동으로 OpenAP
 | PUT/PATCH | `/api/auction-items/{id}` | 경매 물건 수정 |
 | DELETE | `/api/auction-items/{id}` | 경매 물건 삭제 |
 | POST | `/api/auction-items/{id}/analyze` | AI 권리분석 (Gemini) |
+
+---
+
+## 경매 테이블 설계
+
+경매 물건·등기·임차인·배당 정보를 **1:N** 관계로 설계했습니다.
+
+### 테이블 관계도
+
+```
+auction_items (1) ----< (N) auction_item_registries  (등기부)
+           (1) ----< (N) auction_item_tenants       (임차인)
+           (1) ----< (N) auction_item_distributions (배당요구 채권)
+```
+
+- `auction_item_id` FK + `cascadeOnDelete`: 부모 삭제 시 자식 레코드 함께 삭제
+
+### auction_items (경매 물건)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `case_number` | string | 사건번호 |
+| `court_name` | string | 법원명 |
+| `location` | string | 소재지 |
+| `road_address` | string | 도로명주소 |
+| `property_type` | string | 부동산 유형 |
+| `auction_type` | string | 경매 유형 |
+| `land_area_sqm` | decimal | 토지면적(㎡) |
+| `building_area_sqm` | decimal | 건물면적(㎡) |
+| `owner_name` | string | 소유자명 |
+| `debtor_name` | string | 채무자명 |
+| `creditor_name` | string | 채권자명 |
+| `appraised_value` | unsignedBigInteger | 감정가 |
+| `lowest_bid_price` | unsignedBigInteger | 최저입찰가 |
+| `deposit_amount` | unsignedBigInteger | 보증금 |
+| `dividend_deadline` | date | 배당요구기일 |
+| `sale_conditions` | text | 매각조건 |
+| `total_registered_claims` | unsignedBigInteger | 총등기채권 |
+
+### auction_item_registries (등기부)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `auction_item_id` | FK | 경매 물건 ID |
+| `rank` | uint | 순위 |
+| `receipt_date` | date | 접수일 |
+| `right_type` | string | 권리 유형 |
+| `right_holder` | string | 권리자 |
+| `claim_amount` | unsignedBigInteger | 채권금액 |
+| `discharge_status` | string | 해제상태 |
+
+### auction_item_tenants (임차인)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `auction_item_id` | FK | 경매 물건 ID |
+| `tenant_name` | string | 임차인명 |
+| `occupancy_status` | string | 점유상태 |
+| `move_in_date` | date | 입주일 |
+| `fixed_date` | date | 확정일자 |
+| `deposit_amount` | unsignedBigInteger | 보증금 |
+| `monthly_rent` | unsignedBigInteger | 월세 |
+| `has_opposing_power` | boolean | 대항력 여부 |
+
+### auction_item_distributions (배당요구 채권)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `auction_item_id` | FK | 경매 물건 ID |
+| `rank` | uint | 순위 |
+| `claim_type` | string | 채권 유형 |
+| `creditor_name` | string | 채권자명 |
+| `claim_amount` | unsignedBigInteger | 청구금액 |
+| `distributed_amount` | unsignedBigInteger | 배당금액 |
+| `unpaid_amount` | unsignedBigInteger | 미지급액 |
+| `buyer_assumption` | unsignedBigInteger | 낙찰인 부담액 |
 
 ---
 
